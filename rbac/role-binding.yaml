@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bind-pod-reader
+  namespace: acme-todo
+subjects:
+  - kind: ServiceAccount
+    name: app-viewer-sa
+    namespace: acme-todo
+roleRef:
+  kind: Role
+  name: pod-reader-role
+  apiGroup: rbac.authorization.k8s.io

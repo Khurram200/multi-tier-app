@@ -1,20 +1,18 @@
 # Requires a CNI that enforces NetworkPolicy (e.g. Calico on Minikube).
-# Browser → backend/frontend uses NodePort (allowed below).
-# Frontend pod cannot reach postgres:5432 (egress limited to DNS only).
+# Tier layout mirrors: db/  backend/  web/  (same as docker-compose service names).
 
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: postgres-network-policy
+  name: database-network-policy
   namespace: acme-todo
 spec:
   podSelector:
     matchLabels:
-      app: postgres
+      app: database
   policyTypes:
     - Ingress
   ingress:
-    # Only the API tier may connect to the database
     - from:
         - podSelector:
             matchLabels:
@@ -36,11 +34,9 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # NodePort / browser traffic to API
     - ports:
         - protocol: TCP
           port: 5000
-    # Prometheus scrapes /metrics
     - from:
         - podSelector:
             matchLabels:
@@ -49,7 +45,6 @@ spec:
         - protocol: TCP
           port: 5000
   egress:
-    # DNS
     - to:
         - namespaceSelector:
             matchLabels:
@@ -59,11 +54,10 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    # Database tier only
     - to:
         - podSelector:
             matchLabels:
-              app: postgres
+              app: database
       ports:
         - protocol: TCP
           port: 5432
@@ -81,12 +75,10 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # NodePort for CRA dev server
     - ports:
         - protocol: TCP
           port: 3000
   egress:
-    # API tier only (web → backend); no direct path to database
     - to:
         - podSelector:
             matchLabels:
@@ -94,7 +86,6 @@ spec:
       ports:
         - protocol: TCP
           port: 5000
-    # DNS
     - to:
         - namespaceSelector:
             matchLabels:

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-configmap
+  namespace: acme-todo
+data:
+  # Patched by deploy.ps1 with Minikube IP + backend NodePort
+  REACT_APP_API_URL: http://127.0.0.1:30050/api/todos

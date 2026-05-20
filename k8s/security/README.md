@@ -1,52 +1,54 @@
 # Security — NetworkPolicy and RBAC
 
-Part of my Cloud Technologies security task. Files are in this folder and applied with `deploy-security-monitoring.ps1`.
-
-## Important: use Calico
-
-NetworkPolicy did not work for me until I restarted Minikube with:
+Requires Calico (or another enforcing CNI):
 
 ```powershell
 minikube start --cni=calico
 ```
 
-Then redeploy the application.
-
-## NetworkPolicy (what I was trying to show)
-
-- The **database** only accepts connections from the **backend** pod on port 5432  
-- The **frontend pod** may reach the **backend** on port 5000 only (not Postgres)  
-- The **frontend pod** cannot connect directly to Postgres on 5432  
-- The browser also uses the API through NodePort on the host — that is normal  
-
-Test from the frontend pod (should fail or show BLOCKED):
+Apply with:
 
 ```powershell
-kubectl exec -n acme-todo deploy/frontend -- sh -c "nc -zv postgres 5432 2>&1 || echo BLOCKED"
+.\k8s\deploy-security-monitoring.ps1
 ```
 
-## RBAC
+## NetworkPolicy
 
-Each service has its own ServiceAccount:
+| Tier | Policy file | Rule |
+|------|-------------|------|
+| Frontend | `app-network-policies.yaml`, `network-policies.yaml` | May reach **backend:5000** only |
+| Backend | `network-policies.yaml` | Egress to **database:5432**; ingress on **5000** |
+| Database | both policy files | Ingress from **backend** only on **5432** |
 
-| Account | Can do |
-|---------|--------|
-| frontend-sa | Read ConfigMap `app-config` only |
-| backend-sa | Read ConfigMap + Secret `app-secrets` |
-| postgres-sa | Read its PVC |
-| prometheus-sa | List pods/services for scraping |
-
-Check permissions:
+Test:
 
 ```powershell
-kubectl auth can-i get secrets/app-secrets --as=system:serviceaccount:acme-todo:frontend-sa -n acme-todo
-kubectl auth can-i get secrets/app-secrets --as=system:serviceaccount:acme-todo:backend-sa -n acme-todo
+kubectl exec -n acme-todo deploy/frontend-deployment -- sh -c "nc -zv database 5432 2>&1 || echo BLOCKED"
 ```
 
-Frontend should be **no**, backend should be **yes**.
+## RBAC (least privilege per tier)
 
-## Apply manually
+| ServiceAccount | Deployment | Role (least privilege) |
+|----------------|------------|------------------------|
+| `frontend-sa` | `frontend-deployment` | `get` ConfigMap `frontend-configmap` only |
+| `backend-sa` | `backend-deployment` | `get` Secret `db-secret` only |
+| `database-sa` | `db-deployment` | `get` PVC `db-pvc` only |
+| `prometheus-sa` | `prometheus` | `list/watch` pods, services, endpoints in namespace |
+
+Verify:
 
 ```powershell
-kubectl apply -f k8s/security/
+kubectl auth can-i get secret/db-secret --as=system:serviceaccount:acme-todo:frontend-sa -n acme-todo
+kubectl auth can-i get secret/db-secret --as=system:serviceaccount:acme-todo:backend-sa -n acme-todo
+kubectl auth can-i get configmap/frontend-configmap --as=system:serviceaccount:acme-todo:frontend-sa -n acme-todo
 ```
+
+Frontend should be **no** for secrets; backend should be **yes** for `db-secret`.
+
+## Files
+
+- `serviceaccounts.yaml` — one SA per tier (+ prometheus)
+- `rbac.yaml` — Roles and RoleBindings
+- `network-policies.yaml` — extended policies (prometheus, grafana, egress rules)
+
+The root `rbac/` folder is a separate tutorial example; **coursework RBAC uses `k8s/security/`**.

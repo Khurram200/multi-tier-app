@@ -3,7 +3,7 @@
 **Name:** Khurram Farooqui  
 **Student ID:** 2325493  
 **Module:** Cloud Technologies  
-**GitHub:** [https://github.com/Khurram200/multi-tier-app](https://github.com/Khurram200/multi-tier-app)
+**GitHub:** [https://github.com/Khurram200/multi-tier-app]
 
 This repository is my submission for the ACMEInnovateNow project. I took a simple three-tier to-do application (React, Node/Express, PostgreSQL) and deployed it using Docker, Kubernetes, basic security controls, monitoring, serverless (OpenFaaS), and a small edge setup with K3s.
 
@@ -20,12 +20,13 @@ cd multi-tier-app
 
 ## Infrastructure as code (included in this repository)
 
-| Component | Files |
+| Component | ||||||||||||||||  | Files |
 | --------- | ----- |
 | Container images | `backend/Dockerfile`, `web/Dockerfile`, `.dockerignore` |
 | Local orchestration | `docker-compose.yml` |
 | Database schema | `db/init.sql` |
-| Kubernetes workloads | `k8s/namespace.yaml`, `configmap.yaml`, `secret.yaml`, `postgres-pvc.yaml`, `postgres.yaml`, `backend.yaml`, `frontend.yaml` |
+| Kubernetes workloads | `k8s/db-*.yaml`, `k8s/backend-*.yaml`, `k8s/frontend-*.yaml`, `app-network-policies.yaml` |
+| RBAC | `rbac/` (role, role-binding, service-account) |
 | Deploy automation | `k8s/deploy.ps1`, `k8s/deploy-security-monitoring.ps1` |
 | Security | `k8s/security/network-policies.yaml`, `rbac.yaml`, `serviceaccounts.yaml` |
 | Monitoring | `k8s/monitoring/prometheus.yaml`, `prometheus-config.yaml`, `grafana.yaml`, `grafana-dashboards.yaml` |
@@ -52,7 +53,8 @@ cd multi-tier-app
 | `web/`                 | React frontend + Dockerfile                         |
 | `db/init.sql`          | Database table and sample data                      |
 | `docker-compose.yml`   | Run all three tiers with one command                |
-| `k8s/`                 | Kubernetes YAML files and PowerShell deploy scripts |
+| `k8s/`                 | Deployments, Services, secrets (Copy-style layout)    |
+| `rbac/`                | Role, RoleBinding, ServiceAccount                     |
 | `k8s/security/`        | NetworkPolicy and RBAC                              |
 | `k8s/monitoring/`      | Prometheus and Grafana                              |
 | `serverless/openfaas/` | `todo-notify` serverless function                   |
@@ -136,7 +138,7 @@ kubectl get pods -n acme-todo
 Get the frontend URL:
 
 ```powershell
-minikube service frontend -n acme-todo --url
+minikube service frontend-service -n acme-todo --url
 ```
 
 More steps: see [k8s/README.md](k8s/README.md)
@@ -154,7 +156,7 @@ After the app is running on Minikube:
 This adds:
 
 - **NetworkPolicy** — e.g. only the backend can reach the database on port 5432  
-- **RBAC** — separate service accounts with limited permissions  
+- **RBAC** — per-tier ServiceAccounts with Roles and RoleBindings in `k8s/security/`  
 - **Prometheus + Grafana** — backend exposes `/metrics`
 
 Grafana (local only): login `admin` / `admin`  

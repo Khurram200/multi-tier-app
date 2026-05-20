@@ -1,4 +1,4 @@
-# Frontend: no Secret access; read only the shared ConfigMap (least privilege demo).
+# Frontend tier: read only its ConfigMap — no Secret access.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -7,7 +7,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
-    resourceNames: ["app-config"]
+    resourceNames: ["frontend-configmap"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -24,7 +24,7 @@ roleRef:
   kind: Role
   name: frontend-app-role
 ---
-# Backend: read app ConfigMap and Secret only (no cluster-wide access).
+# Backend tier: read database Secret only — no ConfigMap or cluster-wide access.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -32,12 +32,8 @@ metadata:
   namespace: acme-todo
 rules:
   - apiGroups: [""]
-    resources: ["configmaps"]
-    resourceNames: ["app-config"]
-    verbs: ["get"]
-  - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["app-secrets"]
+    resourceNames: ["db-secret"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -54,31 +50,31 @@ roleRef:
   kind: Role
   name: backend-app-role
 ---
-# Postgres: read only its PVC (status/troubleshooting); no Secret or pod list.
+# Database tier: read only its PVC (status/troubleshooting).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: postgres-app-role
+  name: database-app-role
   namespace: acme-todo
 rules:
   - apiGroups: [""]
     resources: ["persistentvolumeclaims"]
-    resourceNames: ["postgres-pvc"]
+    resourceNames: ["db-pvc"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: postgres-app-binding
+  name: database-app-binding
   namespace: acme-todo
 subjects:
   - kind: ServiceAccount
-    name: postgres-sa
+    name: database-sa
     namespace: acme-todo
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: postgres-app-role
+  name: database-app-role
 ---
 # Prometheus: discover and scrape pods/services in this namespace only.
 apiVersion: rbac.authorization.k8s.io/v1
@@ -92,6 +88,7 @@ rules:
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["configmaps"]
+    resourceNames: ["prometheus-config"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

@@ -1,0 +1,15 @@
+# DNS name matches docker-compose DB_HOST: database
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: acme-todo
+  labels:
+    app: database
+spec:
+  type: ClusterIP
+  selector:
+    app: database
+  ports:
+    - port: 5432
+      targetPort: 5432

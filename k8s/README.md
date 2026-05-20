@@ -1,76 +1,48 @@
-# Kubernetes deployment (Minikube)
+# Kubernetes (Minikube)
 
-These files deploy the same app as `docker-compose.yml`, but on a local Kubernetes cluster.
+Manifest layout matches **`multi-tier-app - Copy/k8s`** — one file per resource.
 
 **Namespace:** `acme-todo`
 
-## What you need
+## Layout
 
-- Docker Desktop running  
-- Minikube and kubectl installed  
-- Enough RAM (I used 4GB for Minikube)
+| File | Resource |
+| ---- | -------- |
+| `namespace.yaml` | Namespace |
+| `db-secret.yaml` | Secret (Postgres credentials) |
+| `db-init-script-configmap.yaml` | Schema + seed data (`db/init.sql`) |
+| `db-pvc.yaml` | PersistentVolumeClaim |
+| `db-deployment.yaml` | Postgres 18 |
+| `db-service.yaml` | Service `database` (same hostname as Compose) |
+| `backend-deployment.yaml` | Express API |
+| `backend-service.yaml` | NodePort **30050** |
+| `frontend-configmap.yaml` | `REACT_APP_API_URL` |
+| `frontend-deployment.yaml` | React UI |
+| `frontend-service.yaml` | NodePort **30030** |
+| `app-network-policies.yaml` | Frontend→backend, backend→database |
+| `deploy.ps1` | Build images + apply all of the above |
 
-For the security lab work, start Minikube with Calico:
+**RBAC** (separate folder, like the Copy project): `../rbac/`
+
+**Monitoring:** `monitoring/` (Prometheus + Grafana)
+
+## Deploy
 
 ```powershell
 minikube start --driver=docker --cpus=4 --memory=6144 --cni=calico
-```
-
-## Deploy the app
-
-From the project root:
-
-```powershell
 .\k8s\deploy.ps1
-```
-
-The script:
-
-1. Builds `todo-backend:latest` and `todo-frontend:latest` inside Minikube’s Docker
-2. Applies postgres, backend, and frontend manifests
-3. Sets the frontend API URL using `minikube ip`
-
-Check everything is running:
-
-```powershell
 kubectl get pods -n acme-todo
+minikube service frontend-service -n acme-todo --url
 ```
 
-Open the UI:
-
-```powershell
-minikube service frontend -n acme-todo --url
-```
-
-## Main files
-
-
-| File                | Description                             |
-| ------------------- | --------------------------------------- |
-| `namespace.yaml`    | Creates `acme-todo` namespace           |
-| `secret.yaml`       | Database passwords (local testing only) |
-| `configmap.yaml`    | Environment variables and `init.sql`    |
-| `postgres-pvc.yaml` | Storage for Postgres                    |
-| `postgres.yaml`     | Database deployment and service         |
-| `backend.yaml`      | API — NodePort 30050                    |
-| `frontend.yaml`     | React app — NodePort 30030              |
-| `deploy.ps1`        | Build + apply script                    |
-
-
-## Security and monitoring
-
-Run after the app works:
+## Security + monitoring
 
 ```powershell
 .\k8s\deploy-security-monitoring.ps1
 ```
 
-See `security/README.md` and `monitoring/README.md`.
-
-## Remove everything
+## Clean up
 
 ```powershell
 kubectl delete namespace acme-todo
 ```
-
-Or delete the whole cluster: `minikube delete`

@@ -1,46 +1,43 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: db-deployment
   namespace: acme-todo
   labels:
-    app: postgres
+    app: database
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: database
   template:
     metadata:
       labels:
-        app: postgres
+        app: database
     spec:
-      serviceAccountName: postgres-sa
+      serviceAccountName: database-sa
       containers:
         - name: postgres
           image: postgres:18-alpine
           ports:
             - containerPort: 5432
           env:
+            - name: POSTGRES_DB
+              value: todo
             - name: POSTGRES_USER
               valueFrom:
-                configMapKeyRef:
-                  name: app-config
+                secretKeyRef:
+                  name: db-secret
                   key: POSTGRES_USER
-            - name: POSTGRES_DB
-              valueFrom:
-                configMapKeyRef:
-                  name: app-config
-                  key: POSTGRES_DB
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: app-secrets
+                  name: db-secret
                   key: POSTGRES_PASSWORD
           volumeMounts:
-            - name: postgres-data
+            - name: db-storage
               mountPath: /var/lib/postgresql
-            - name: init-script
+            - name: db-init-script-volume
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
           readinessProbe:
@@ -54,27 +51,9 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 10
       volumes:
-        - name: postgres-data
+        - name: db-storage
           persistentVolumeClaim:
-            claimName: postgres-pvc
-        - name: init-script
+            claimName: db-pvc
+        - name: db-init-script-volume
           configMap:
-            name: app-config
-            items:
-              - key: init.sql
-                path: init.sql
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: acme-todo
-  labels:
-    app: postgres
-spec:
-  type: ClusterIP
-  selector:
-    app: postgres
-  ports:
-    - port: 5432
-      targetPort: 5432
+            name: db-init-script-configmap

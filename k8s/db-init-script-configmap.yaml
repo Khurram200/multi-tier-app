@@ -1,18 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: app-config
+  name: db-init-script-configmap
   namespace: acme-todo
 data:
-  POSTGRES_USER: postgres
-  POSTGRES_DB: todo
-  DB_HOST: postgres
-  DB_USER: postgres
-  DB_NAME: todo
-  DB_PORT: "5432"
-  PORT: "5000"
-  # Updated after deploy — see k8s/README.md (must match Minikube IP + backend NodePort)
-  REACT_APP_API_URL: http://127.0.0.1:30050/api/todos
   init.sql: |
     CREATE TABLE IF NOT EXISTS todos (
       id SERIAL PRIMARY KEY,
