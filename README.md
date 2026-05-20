@@ -3,11 +3,11 @@
 **Name:** Khurram Farooqui  
 **Student ID:** 2325493  
 **Module:** Cloud Technologies  
-**GitHub:** [https://github.com/Khurram200/multi-tier-app]
+**GitHub:** [https://github.com/Khurram200/multi-tier-app](https://github.com/Khurram200/multi-tier-app)
 
 This repository is my submission for the ACMEInnovateNow project. I took a simple three-tier to-do application (React, Node/Express, PostgreSQL) and deployed it using Docker, Kubernetes, basic security controls, monitoring, serverless (OpenFaaS), and a small edge setup with K3s.
 
-The logbook and written report are submitted separately with my portfolio — this repo holds the **code and infrastructure-as-code (IaC)** plus step-by-step deployment instructions below.
+The cumulative technical logbook is in [`Technical-Logbook.md`](Technical-Logbook.md). The written report and demonstration video are submitted with my portfolio — this repo holds the **code and infrastructure-as-code (IaC)** plus step-by-step deployment instructions below.
 
 Clone and deploy:
 
@@ -20,7 +20,7 @@ cd multi-tier-app
 
 ## Infrastructure as code (included in this repository)
 
-| Component | ||||||||||||||||  | Files |
+| Component | Files |
 | --------- | ----- |
 | Container images | `backend/Dockerfile`, `web/Dockerfile`, `.dockerignore` |
 | Local orchestration | `docker-compose.yml` |
@@ -49,6 +49,7 @@ cd multi-tier-app
 
 | Folder / file          | Purpose                                             |
 | ---------------------- | --------------------------------------------------- |
+| `Technical-Logbook.md` | Cumulative technical logbook (Phases 1–5)           |
 | `backend/`             | Express API + Dockerfile                            |
 | `web/`                 | React frontend + Dockerfile                         |
 | `db/init.sql`          | Database table and sample data                      |
