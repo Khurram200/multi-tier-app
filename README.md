@@ -1,70 +1,63 @@
-# ACMEInnovateNow — Cloud-Native To-Do Application
+# Multi-tier To-Do App — Cloud Technologies Coursework
 
-| | |
-|---|---|
-| **Student** | Khurram Farooqui |
-| **Student number** | 2325493 |
-| **Module** | Cloud Technologies |
-| **Project** | Legacy application modernization (monolith → cloud-native) |
+**Name:** Khurram Farooqui  
+**Student ID:** 2325493  
+**Module:** Cloud Technologies  
+**GitHub:** https://github.com/Khurram200/multi-tier-app
 
-Production-style **three-tier** application (React, Express, PostgreSQL) packaged with **Docker**, orchestrated with **Docker Compose** and **Kubernetes (Minikube)**, hardened with **NetworkPolicy/RBAC**, observed with **Prometheus/Grafana**, extended with **OpenFaaS** serverless and a **K3s edge** simulation.
+This repository is my submission for the ACMEInnovateNow project. I took a simple three-tier to-do application (React, Node/Express, PostgreSQL) and deployed it using Docker, Kubernetes, basic security controls, monitoring, serverless (OpenFaaS), and a small edge setup with K3s.
+
+The logbook and written report are submitted separately with my portfolio — this repo holds the **code and infrastructure files** plus instructions to run everything.
 
 ---
 
-## Repository structure (infrastructure-as-code)
+## What the application does
 
+- View, add, edit, and delete tasks in a web UI  
+- Data stored in PostgreSQL  
+- REST API at `/api/todos`  
+- Health check at `/health` and Prometheus metrics at `/metrics` on the backend  
+
+---
+
+## Project structure
+
+| Folder / file | Purpose |
+|---------------|---------|
+| `backend/` | Express API + Dockerfile |
+| `web/` | React frontend + Dockerfile |
+| `db/init.sql` | Database table and sample data |
+| `docker-compose.yml` | Run all three tiers with one command |
+| `k8s/` | Kubernetes YAML files and PowerShell deploy scripts |
+| `k8s/security/` | NetworkPolicy and RBAC |
+| `k8s/monitoring/` | Prometheus and Grafana |
+| `serverless/openfaas/` | `todo-notify` serverless function |
+| `edge/` | k3d (K3s in Docker) with a small nginx service |
+
+---
+
+## Requirements
+
+- Windows 10/11 (what I used) or similar  
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)  
+- [Node.js](https://nodejs.org/) 18+ (only if running without Docker)  
+- [Minikube](https://minikube.sigs.k8s.io/) and [kubectl](https://kubernetes.io/docs/tasks/tools/) for the Kubernetes tasks  
+- [k3d](https://k3d.io/) for the edge task  
+- Optional: [faas-cli](https://docs.openfaas.com/cli/install/) and arkade/Helm for OpenFaaS  
+
+Check Docker is running:
+
+```powershell
+docker version
 ```
-multi-tier-app/
-├── README.md                 # This file — deployment instructions
-├── docker-compose.yml        # Compose orchestration (3 services + network + volume)
-├── backend/
-│   ├── Dockerfile            # Multi-stage API image
-│   ├── .dockerignore
-│   ├── server.js             # REST API, /health, /metrics
-│   └── package.json
-├── web/
-│   ├── Dockerfile            # Multi-stage frontend image
-│   ├── .dockerignore
-│   └── src/                  # React application
-├── db/
-│   └── init.sql              # Schema + seed data
-├── k8s/                      # Kubernetes manifests (Minikube)
-│   ├── namespace.yaml
-│   ├── secret.yaml
-│   ├── configmap.yaml
-│   ├── postgres-pvc.yaml
-│   ├── postgres.yaml         # Deployment + Service
-│   ├── backend.yaml
-│   ├── frontend.yaml
-│   ├── deploy.ps1
-│   ├── deploy-security-monitoring.ps1
-│   ├── security/             # NetworkPolicy, RBAC, ServiceAccounts
-│   └── monitoring/           # Prometheus, Grafana
-├── serverless/openfaas/      # OpenFaaS function + install scripts
-├── edge/                     # K3s edge cluster (k3d) + lightweight service
-└── docs/                     # Logbook, project report, portfolio checklist
-```
+
+You should see both **Client** and **Server**. If not, start Docker Desktop first.
 
 ---
 
-## Prerequisites
+## 1. Docker Compose (containerisation)
 
-| Tool | Purpose | Verify |
-|------|---------|--------|
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Compose & image builds | `docker version` (Client **and** Server) |
-| [Node.js](https://nodejs.org/) 18+ | Optional local run without containers | `node --version` |
-| [Minikube](https://minikube.sigs.k8s.io/) | Local Kubernetes | `minikube version` |
-| [kubectl](https://kubernetes.io/docs/tasks/tools/) | Cluster CLI | `kubectl version --client` |
-| [k3d](https://k3d.io/) | K3s in Docker (edge task) | `k3d version` |
-| [arkade](https://github.com/alexellis/arkade) or Helm | OpenFaaS install (optional) | `arkade version` |
-
-**Windows note:** If port **5000** is in use, map backend to **5001** in `docker-compose.yml` (see [Troubleshooting](#troubleshooting)).
-
----
-
-## Quick start — Docker Compose (recommended first)
-
-Single command starts database, API, and UI.
+This was the first way I ran the full app in containers.
 
 ```powershell
 git clone https://github.com/Khurram200/multi-tier-app.git
@@ -72,171 +65,128 @@ cd multi-tier-app
 docker compose up --build
 ```
 
-**Repository:** https://github.com/Khurram200/multi-tier-app
+Wait until you see the database healthy, backend started, and frontend compiled.
 
-| Service | URL |
-|---------|-----|
-| Web UI | http://localhost:3000 |
+| What | URL |
+|------|-----|
+| Website | http://localhost:3000 |
 | API | http://localhost:5000/api/todos |
-| Health | http://localhost:5000/health |
-| Metrics | http://localhost:5000/metrics |
 
-Stop:
+Stop: `docker compose down`
 
-```powershell
-docker compose down
-```
-
-Fresh database:
-
-```powershell
-docker compose down -v
-```
+**Note:** On my laptop port 5000 was already used. I changed the compose file to `5001:5000` and set `REACT_APP_API_URL=http://localhost:5001/api/todos` on the frontend service.
 
 ---
 
-## Deployment — Kubernetes (Minikube)
+## 2. Run without Docker (optional)
 
-### 1. Start cluster
+Useful to understand each part before containerising.
 
-NetworkPolicy requires a compatible CNI:
+1. Install PostgreSQL and create database `todo`  
+2. Run: `psql -U postgres -d todo -f db/init.sql`  
+3. Terminal 1: `cd backend` → copy `.env.example` to `.env` → `npm install` → `npm start`  
+4. Terminal 2: `cd web` → `npm install` → `npm start`  
+
+---
+
+## 3. Kubernetes on Minikube
+
+I converted the compose setup into Kubernetes manifests in the `k8s/` folder.
+
+Start Minikube with Calico (needed for NetworkPolicy to work):
 
 ```powershell
 minikube start --driver=docker --cpus=4 --memory=6144 --cni=calico
-kubectl cluster-info
-```
-
-### 2. Deploy application
-
-```powershell
-cd multi-tier-app
 .\k8s\deploy.ps1
 ```
 
-### 3. Security and monitoring
+Check pods:
+
+```powershell
+kubectl get pods -n acme-todo
+```
+
+Get the frontend URL:
+
+```powershell
+minikube service frontend -n acme-todo --url
+```
+
+More steps: see [k8s/README.md](k8s/README.md)
+
+---
+
+## 4. Security and monitoring
+
+After the app is running on Minikube:
 
 ```powershell
 .\k8s\deploy-security-monitoring.ps1
 ```
 
-### 4. Access services
+This adds:
 
-```powershell
-kubectl get pods -n acme-todo
-minikube service frontend -n acme-todo --url
-minikube service backend -n acme-todo --url
-minikube service prometheus -n acme-todo --url
-minikube service grafana -n acme-todo --url
-```
+- **NetworkPolicy** — e.g. only the backend can reach the database on port 5432  
+- **RBAC** — separate service accounts with limited permissions  
+- **Prometheus + Grafana** — backend exposes `/metrics`  
 
-Grafana default login (local only): `admin` / `admin`
-
-Detailed steps: [k8s/README.md](k8s/README.md) · [k8s/security/README.md](k8s/security/README.md) · [k8s/monitoring/README.md](k8s/monitoring/README.md)
+Grafana (local only): login `admin` / `admin`  
+See [k8s/security/README.md](k8s/security/README.md) and [k8s/monitoring/README.md](k8s/monitoring/README.md)
 
 ---
 
-## Deployment — OpenFaaS (serverless)
+## 5. OpenFaaS (serverless)
+
+I added a small function `todo-notify` that validates a todo title over HTTP. The main API still handles normal CRUD.
 
 ```powershell
 .\serverless\openfaas\install-openfaas.ps1
 kubectl port-forward -n openfaas svc/gateway 8080:8080
 ```
 
-Build and deploy function (separate terminal, Minikube Docker):
-
-```powershell
-cd serverless\openfaas
-minikube docker-env --shell powershell | Invoke-Expression
-faas-cli build -f todo-notify.yml
-faas-cli deploy -f todo-notify.yml --gateway http://127.0.0.1:8080
-```
-
-Test:
-
-```powershell
-curl -X POST http://127.0.0.1:8080/function/todo-notify `
-  -H "Content-Type: application/json" `
-  -d '{"title":"Portfolio demo"}'
-```
-
-Full guide: [serverless/openfaas/README.md](serverless/openfaas/README.md)
+Then build and deploy — [serverless/openfaas/README.md](serverless/openfaas/README.md)
 
 ---
 
-## Deployment — Edge node (K3s via k3d)
+## 6. Edge computing (K3s with k3d)
 
-Simulates a resource-constrained edge site (lightweight service only):
+The full app is too heavy for a realistic edge device, so on the edge cluster I only deployed a lightweight nginx status page.
 
 ```powershell
 .\edge\setup-edge.ps1
-curl http://localhost:8088
 ```
 
-Guide: [edge/README.md](edge/README.md)
+Then open http://localhost:8088
+
+Details: [edge/README.md](edge/README.md)
 
 ---
 
-## Run without containers (development)
+## Problems I ran into (and fixes)
 
-See [docs/SETUP_LOCAL_WITHOUT_DOCKER.md](docs/SETUP_LOCAL_WITHOUT_DOCKER.md).
-
----
-
-## Architecture overview
-
-```
-Browser
-   │
-   ├─► Frontend (React)     :3000
-   │
-   └─► Backend (Express)    :5000  ──► PostgreSQL :5432
-              │
-              └──► OpenFaaS todo-notify (optional webhook)
-
-Minikube: namespace acme-todo + Prometheus + Grafana
-Edge:     k3d cluster acme-edge → edge-health (nginx)
-```
+| Issue | Fix |
+|-------|-----|
+| Docker not connecting | Start Docker Desktop |
+| Postgres container failing | Use volume path `/var/lib/postgresql` for Postgres 18 |
+| API/database login failed | Match `DB_PASSWORD` and `POSTGRES_PASSWORD` in compose |
+| Port 5000 busy on Windows | Map `5001:5000` and update frontend API URL |
+| `ImagePullBackOff` in K8s | Build images inside Minikube after `minikube docker-env` |
+| Todos not loading on K8s | Set `REACT_APP_API_URL` to Minikube IP + backend NodePort |
 
 ---
 
-## Infrastructure highlights
+## What I learned (short summary)
 
-| Area | Implementation |
-|------|----------------|
-| Container images | Multi-stage Dockerfiles, non-root `node` user |
-| Compose | Health checks, bridge network, named volume |
-| Kubernetes | Deployments, Services, ConfigMap, Secret, PVC, probes |
-| Security | NetworkPolicy tier isolation, RBAC ServiceAccounts |
-| Monitoring | Prometheus scrape of `/metrics`, Grafana dashboards |
-| Serverless | OpenFaaS `todo-notify` HTTP function |
-| Edge | k3d + minimal nginx Deployment |
+- How to write Dockerfiles with multi-stage builds and a non-root user  
+- How Docker Compose links services with networks and volumes  
+- How to map a compose file to Kubernetes Deployments, Services, Secrets, and ConfigMaps  
+- Why network policies and RBAC matter in a multi-tier app  
+- How to scrape basic metrics with Prometheus  
+- When serverless is useful (small event functions) vs when to keep a normal API  
+- How K3s/k3d can represent a smaller edge environment  
 
 ---
 
-## Troubleshooting
+## Disclaimer
 
-| Issue | Solution |
-|-------|----------|
-| Docker daemon not running | Start Docker Desktop; retry `docker version` |
-| Port 5000 in use (Windows) | Use `5001:5000` and `REACT_APP_API_URL=http://localhost:5001/api/todos` |
-| Postgres 18 volume error | Compose uses `pgdata:/var/lib/postgresql` (see `docker-compose.yml`) |
-| `ImagePullBackOff` on Minikube | Build images after `minikube docker-env \| Invoke-Expression` |
-| NetworkPolicy not enforced | Restart Minikube with `--cni=calico` |
-| Frontend loads, no todos | Check API URL matches published backend NodePort / host port |
-
----
-
-## Portfolio documentation
-
-| Document | Description |
-|----------|-------------|
-| [docs/TECHNICAL_LOGBOOK.md](docs/TECHNICAL_LOGBOOK.md) | Phase-by-phase engineering log |
-| [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) | Comprehensive project report |
-| [docs/PORTFOLIO_SUBMISSION.md](docs/PORTFOLIO_SUBMISSION.md) | Four-component submission checklist |
-| [docs/SECURITY.md](docs/SECURITY.md) | Security design rationale |
-
----
-
-## License
-
-Assessment/educational use — ACMEInnovateNow fictional scenario (Cloud Technologies module).
+This is **university coursework**, not a production system. Passwords in `k8s/secret.yaml` are for local testing only and should not be reused in real deployments.
