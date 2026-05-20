@@ -32,8 +32,6 @@ cd multi-tier-app
 | Serverless | `serverless/openfaas/todo-notify/`, `install-openfaas.ps1` |
 | Edge simulation | `edge/setup-edge.ps1`, `edge/k8s/edge-health.yaml` |
 
-Module task index: [COURSEWORK-REQUIREMENTS.md](COURSEWORK-REQUIREMENTS.md)
-
 ---
 
 ## What the application does
