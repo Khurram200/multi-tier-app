@@ -1,0 +1,109 @@
+# Frontend: no Secret access; read only the shared ConfigMap (least privilege demo).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: frontend-app-role
+  namespace: acme-todo
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["app-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: frontend-app-binding
+  namespace: acme-todo
+subjects:
+  - kind: ServiceAccount
+    name: frontend-sa
+    namespace: acme-todo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: frontend-app-role
+---
+# Backend: read app ConfigMap and Secret only (no cluster-wide access).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backend-app-role
+  namespace: acme-todo
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["app-config"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["app-secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-app-binding
+  namespace: acme-todo
+subjects:
+  - kind: ServiceAccount
+    name: backend-sa
+    namespace: acme-todo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: backend-app-role
+---
+# Postgres: read only its PVC (status/troubleshooting); no Secret or pod list.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: postgres-app-role
+  namespace: acme-todo
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    resourceNames: ["postgres-pvc"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: postgres-app-binding
+  namespace: acme-todo
+subjects:
+  - kind: ServiceAccount
+    name: postgres-sa
+    namespace: acme-todo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: postgres-app-role
+---
+# Prometheus: discover and scrape pods/services in this namespace only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: prometheus-scrape-role
+  namespace: acme-todo
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: prometheus-scrape-binding
+  namespace: acme-todo
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-sa
+    namespace: acme-todo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prometheus-scrape-role

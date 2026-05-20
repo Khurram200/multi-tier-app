@@ -1,0 +1,74 @@
+# Lightweight service for resource-constrained edge node (K3s)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edge
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-health
+  namespace: edge
+  labels:
+    app: edge-health
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: edge-health
+  template:
+    metadata:
+      labels:
+        app: edge-health
+    spec:
+      containers:
+        - name: edge-health
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 10m
+            limits:
+              memory: 32Mi
+              cpu: 50m
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            name: edge-health-html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-health-html
+  namespace: edge
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><title>ACME Edge Node</title></head>
+    <body>
+      <h1>Edge node — K3s (lightweight)</h1>
+      <p>Simulates a resource-constrained site serving health/status.</p>
+      <p>Cluster: edge | Service: edge-health</p>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edge-health
+  namespace: edge
+  labels:
+    app: edge-health
+spec:
+  type: LoadBalancer
+  selector:
+    app: edge-health
+  ports:
+    - port: 80
+      targetPort: 80

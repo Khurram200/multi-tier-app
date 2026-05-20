@@ -1,0 +1,7 @@
+{
+  "name": "todo-notify",
+  "version": "1.0.0",
+  "description": "OpenFaaS function — event-driven todo title validation",
+  "main": "handler.js",
+  "dependencies": {}
+}

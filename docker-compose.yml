@@ -1,0 +1,77 @@
+# Three-tier To-Do app — web, backend, database
+# Run: docker compose up --build
+
+services:
+  database:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dataserver
+      POSTGRES_DB: todo
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql
+    ports:
+      - '5432:5432'
+    networks:
+      - app-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d todo']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      # If port 5000 is in use on Windows, change to '5001:5000' and set frontend REACT_APP_API_URL below
+      - '5000:5000'
+    environment:
+      DB_HOST: database
+      DB_USER: postgres
+      DB_PASSWORD: dataserver
+      DB_NAME: todo
+      DB_PORT: '5432'
+      PORT: '5000'
+    networks:
+      - app-network
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://127.0.0.1:5000/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build: ./web
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      # Browser runs on host — use localhost and the published backend port
+      REACT_APP_API_URL: http://localhost:5000/api/todos
+    networks:
+      - app-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    name: multi-tier-app-pgdata
