@@ -8,7 +8,7 @@ These files deploy the same app as `docker-compose.yml`, but on a local Kubernet
 
 - Docker Desktop running  
 - Minikube and kubectl installed  
-- Enough RAM (I used 4GB for Minikube)  
+- Enough RAM (I used 4GB for Minikube)
 
 For the security lab work, start Minikube with Calico:
 
@@ -26,9 +26,9 @@ From the project root:
 
 The script:
 
-1. Builds `todo-backend:latest` and `todo-frontend:latest` inside Minikube’s Docker  
-2. Applies postgres, backend, and frontend manifests  
-3. Sets the frontend API URL using `minikube ip`  
+1. Builds `todo-backend:latest` and `todo-frontend:latest` inside Minikube’s Docker
+2. Applies postgres, backend, and frontend manifests
+3. Sets the frontend API URL using `minikube ip`
 
 Check everything is running:
 
@@ -44,16 +44,18 @@ minikube service frontend -n acme-todo --url
 
 ## Main files
 
-| File | Description |
-|------|-------------|
-| `namespace.yaml` | Creates `acme-todo` namespace |
-| `secret.yaml` | Database passwords (local testing only) |
-| `configmap.yaml` | Environment variables and `init.sql` |
-| `postgres-pvc.yaml` | Storage for Postgres |
-| `postgres.yaml` | Database deployment and service |
-| `backend.yaml` | API — NodePort 30050 |
-| `frontend.yaml` | React app — NodePort 30030 |
-| `deploy.ps1` | Build + apply script |
+
+| File                | Description                             |
+| ------------------- | --------------------------------------- |
+| `namespace.yaml`    | Creates `acme-todo` namespace           |
+| `secret.yaml`       | Database passwords (local testing only) |
+| `configmap.yaml`    | Environment variables and `init.sql`    |
+| `postgres-pvc.yaml` | Storage for Postgres                    |
+| `postgres.yaml`     | Database deployment and service         |
+| `backend.yaml`      | API — NodePort 30050                    |
+| `frontend.yaml`     | React app — NodePort 30030              |
+| `deploy.ps1`        | Build + apply script                    |
+
 
 ## Security and monitoring
 

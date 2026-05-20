@@ -14,16 +14,17 @@ Install k3d, then from the project root:
 .\edge\setup-edge.ps1
 ```
 
-Open http://localhost:8088 in a browser.
+Open [http://localhost:8088](http://localhost:8088) in a browser.
 
 ## What gets created
 
 - k3d cluster name: `acme-edge`  
 - Namespace: `edge`  
-- Deployment: `edge-health` (nginx:alpine, small resource limits)  
+- Deployment: `edge-health` (nginx:alpine, small resource limits)
 
 ## Clean up
 
 ```powershell
 k3d cluster delete acme-edge
 ```
+
