@@ -7,7 +7,32 @@
 
 This repository is my submission for the ACMEInnovateNow project. I took a simple three-tier to-do application (React, Node/Express, PostgreSQL) and deployed it using Docker, Kubernetes, basic security controls, monitoring, serverless (OpenFaaS), and a small edge setup with K3s.
 
-The logbook and written report are submitted separately with my portfolio — this repo holds the **code and infrastructure files** plus instructions to run everything.
+The logbook and written report are submitted separately with my portfolio — this repo holds the **code and infrastructure-as-code (IaC)** plus step-by-step deployment instructions below.
+
+Clone and deploy:
+
+```powershell
+git clone https://github.com/Khurram200/multi-tier-app.git
+cd multi-tier-app
+```
+
+---
+
+## Infrastructure as code (included in this repository)
+
+| Component | Files |
+| --------- | ----- |
+| Container images | `backend/Dockerfile`, `web/Dockerfile`, `.dockerignore` |
+| Local orchestration | `docker-compose.yml` |
+| Database schema | `db/init.sql` |
+| Kubernetes workloads | `k8s/namespace.yaml`, `configmap.yaml`, `secret.yaml`, `postgres-pvc.yaml`, `postgres.yaml`, `backend.yaml`, `frontend.yaml` |
+| Deploy automation | `k8s/deploy.ps1`, `k8s/deploy-security-monitoring.ps1` |
+| Security | `k8s/security/network-policies.yaml`, `rbac.yaml`, `serviceaccounts.yaml` |
+| Monitoring | `k8s/monitoring/prometheus.yaml`, `prometheus-config.yaml`, `grafana.yaml`, `grafana-dashboards.yaml` |
+| Serverless | `serverless/openfaas/todo-notify/`, `install-openfaas.ps1` |
+| Edge simulation | `edge/setup-edge.ps1`, `edge/k8s/edge-health.yaml` |
+
+Module task index: [COURSEWORK-REQUIREMENTS.md](COURSEWORK-REQUIREMENTS.md)
 
 ---
 

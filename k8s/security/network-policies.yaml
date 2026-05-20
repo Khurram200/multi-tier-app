@@ -86,7 +86,15 @@ spec:
         - protocol: TCP
           port: 3000
   egress:
-    # DNS only — blocks direct pod → postgres (browser uses host NodePort for API)
+    # API tier only (web → backend); no direct path to database
+    - to:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 5000
+    # DNS
     - to:
         - namespaceSelector:
             matchLabels:

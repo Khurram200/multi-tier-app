@@ -15,8 +15,9 @@ Then redeploy the application.
 ## NetworkPolicy (what I was trying to show)
 
 - The **database** only accepts connections from the **backend** pod on port 5432  
-- The **frontend pod** cannot connect directly to Postgres (only DNS egress)  
-- The browser still uses the API through NodePort on the host — that is normal  
+- The **frontend pod** may reach the **backend** on port 5000 only (not Postgres)  
+- The **frontend pod** cannot connect directly to Postgres on 5432  
+- The browser also uses the API through NodePort on the host — that is normal  
 
 Test from the frontend pod (should fail or show BLOCKED):
 

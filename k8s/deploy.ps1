@@ -21,6 +21,7 @@ if ($LASTEXITCODE -ne 0) { exit 1 }
 
 Write-Host "==> Applying manifests..." -ForegroundColor Cyan
 kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/security/serviceaccounts.yaml
 kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/configmap.yaml
 kubectl apply -f k8s/postgres-pvc.yaml
